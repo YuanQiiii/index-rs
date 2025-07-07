@@ -31,6 +31,7 @@ cargo clippy
 ## Architecture
 
 ### Backend (Rust/axum)
+
 - **Data Collector**: Background async task using tokio that collects system metrics every second via the `sysinfo` crate
 - **Web Server**: axum-based server providing:
   - Static file serving for frontend
@@ -40,6 +41,7 @@ cargo clippy
   - WebSocket endpoint: `/ws/realtime` - Real-time system metrics streaming
 
 ### Frontend (SPA)
+
 - Single Page Application with real-time updates via WebSocket
 - Visualization using Chart.js or ECharts
 - Service cards with health status indicators
@@ -56,12 +58,14 @@ cargo clippy
 ## Configuration
 
 Services are configured via a `config.toml` file defining:
+
 - Service name, URL, icon, and description
 - Health check endpoints for status monitoring
 
 ## Data Models
 
 Key structures include:
+
 - `ServiceCard` - Service navigation cards
 - `SystemStaticInfo` - Static system information
 - `RealtimeData` - Dynamic metrics pushed via WebSocket

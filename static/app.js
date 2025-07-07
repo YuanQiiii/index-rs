@@ -222,6 +222,18 @@ function updateRealtimeData(data) {
     document.getElementById('cpu-usage').textContent = cpuUsage;
     updateChart(charts.cpu, parseFloat(cpuUsage));
     
+    // 更新 CPU 温度和功耗
+    const cpuTempEl = document.getElementById('cpu-temperature');
+    const cpuPowerEl = document.getElementById('cpu-power');
+    
+    if (cpuTempEl && data.cpu.temperature_celsius !== null && data.cpu.temperature_celsius !== undefined) {
+        cpuTempEl.textContent = `${data.cpu.temperature_celsius.toFixed(1)}°C`;
+    }
+    
+    if (cpuPowerEl && data.cpu.power_watts !== null && data.cpu.power_watts !== undefined) {
+        cpuPowerEl.textContent = `${data.cpu.power_watts.toFixed(1)}W`;
+    }
+    
     // 更新内存
     const memoryUsage = data.memory.used_percent.toFixed(1);
     document.getElementById('memory-usage').textContent = memoryUsage;
@@ -239,6 +251,11 @@ function updateRealtimeData(data) {
     
     // 更新磁盘信息
     updateDisks(data.disks);
+    
+    // 更新 GPU 信息
+    if (data.gpu) {
+        updateGpus(data.gpu);
+    }
 }
 
 // 更新图表数据
@@ -297,4 +314,81 @@ function formatUptime(seconds) {
     } else {
         return `${minutes}分钟`;
     }
+}
+
+// 更新 GPU 信息
+function updateGpus(gpus) {
+    const gpuSection = document.getElementById('gpu-section');
+    const container = document.getElementById('gpu-list');
+    
+    // 显示 GPU 部分
+    gpuSection.style.display = 'block';
+    
+    // 清空容器
+    container.innerHTML = '';
+    
+    gpus.forEach(gpu => {
+        const gpuItem = document.createElement('div');
+        gpuItem.className = 'gpu-item';
+        
+        const memoryPercent = (gpu.memory_used_mb / gpu.memory_total_mb * 100).toFixed(1);
+        
+        gpuItem.innerHTML = `
+            <div class="gpu-info">
+                <h4>GPU ${gpu.index}: ${gpu.name}</h4>
+                <div class="gpu-stats">
+                    <div class="gpu-stat">
+                        <span class="label">温度:</span>
+                        <span class="value">${gpu.temperature_celsius}°C</span>
+                    </div>
+                    <div class="gpu-stat">
+                        <span class="label">使用率:</span>
+                        <span class="value">${gpu.utilization_percent}%</span>
+                    </div>
+                    ${gpu.power_draw_watts !== null && gpu.power_draw_watts !== undefined ? `
+                    <div class="gpu-stat">
+                        <span class="label">功耗:</span>
+                        <span class="value">${gpu.power_draw_watts.toFixed(1)} W</span>
+                    </div>
+                    ` : ''}
+                    ${gpu.power_limit_watts !== null && gpu.power_limit_watts !== undefined ? `
+                    <div class="gpu-stat">
+                        <span class="label">功耗限制:</span>
+                        <span class="value">${gpu.power_limit_watts.toFixed(1)} W</span>
+                    </div>
+                    ` : ''}
+                    ${gpu.fan_speed_percent !== null && gpu.fan_speed_percent !== undefined ? `
+                    <div class="gpu-stat">
+                        <span class="label">风扇转速:</span>
+                        <span class="value">${gpu.fan_speed_percent}%</span>
+                    </div>
+                    ` : ''}
+                </div>
+                <div class="gpu-clocks">
+                    ${gpu.graphics_clock_mhz !== null && gpu.graphics_clock_mhz !== undefined ? `
+                    <div class="gpu-stat">
+                        <span class="label">核心频率:</span>
+                        <span class="value">${gpu.graphics_clock_mhz} MHz</span>
+                    </div>
+                    ` : ''}
+                    ${gpu.memory_clock_mhz !== null && gpu.memory_clock_mhz !== undefined ? `
+                    <div class="gpu-stat">
+                        <span class="label">显存频率:</span>
+                        <span class="value">${gpu.memory_clock_mhz} MHz</span>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+            <div class="gpu-memory">
+                <div class="memory-text">
+                    显存: ${gpu.memory_used_mb} MB / ${gpu.memory_total_mb} MB (${memoryPercent}%)
+                </div>
+                <div class="usage-bar">
+                    <div class="usage-fill gpu-memory-fill" style="width: ${memoryPercent}%"></div>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(gpuItem);
+    });
 }

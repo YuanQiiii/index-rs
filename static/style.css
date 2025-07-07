@@ -168,6 +168,24 @@ header h1 {
     text-align: center;
 }
 
+.monitor-extra {
+    display: flex;
+    justify-content: space-around;
+    margin: 10px 0;
+    font-size: 14px;
+}
+
+.monitor-stat {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--text-secondary);
+}
+
+.monitor-stat i {
+    font-size: 16px;
+}
+
 canvas {
     max-height: 150px;
 }
@@ -297,6 +315,81 @@ canvas {
 .service-card p {
     color: var(--text-secondary);
     font-size: 14px;
+}
+
+/* GPU */
+.gpu-section {
+    margin-bottom: 30px;
+}
+
+.gpu-section h2 {
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.gpu-list {
+    display: grid;
+    gap: 15px;
+}
+
+.gpu-item {
+    background-color: var(--bg-secondary);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+}
+
+.gpu-info {
+    margin-bottom: 15px;
+}
+
+.gpu-info h4 {
+    margin-bottom: 10px;
+    color: var(--primary-color);
+}
+
+.gpu-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 10px;
+}
+
+.gpu-clocks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-color);
+}
+
+.gpu-stat {
+    display: flex;
+    gap: 10px;
+}
+
+.gpu-stat .label {
+    color: var(--text-secondary);
+}
+
+.gpu-stat .value {
+    font-weight: bold;
+}
+
+.gpu-memory {
+    margin-top: 10px;
+}
+
+.memory-text {
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+.gpu-memory-fill {
+    background-color: var(--warning-color);
 }
 
 /* Responsive */

@@ -3,7 +3,8 @@ use chrono::Utc;
 use sysinfo::{System, Networks, Disks};
 use tokio::sync::broadcast;
 use tokio::time::{interval, Duration};
-use tracing::info;
+use tracing::{info, debug};
+use std::process::Command;
 
 pub struct SystemCollector {
     tx: broadcast::Sender<RealtimeData>,
@@ -38,9 +39,14 @@ impl SystemCollector {
             let total_usage = sys.global_cpu_info().cpu_usage();
             let core_usage: Vec<f32> = sys.cpus().iter().map(|cpu| cpu.cpu_usage()).collect();
             
+            // 获取 CPU 温度和功耗
+            let (cpu_temp, cpu_power) = get_cpu_sensors_info();
+            
             let cpu_info = CpuInfo {
                 total_usage,
                 core_usage,
+                temperature_celsius: cpu_temp,
+                power_watts: cpu_power,
             };
             
             // 收集内存信息
@@ -126,6 +132,9 @@ impl SystemCollector {
                 fifteen: load_avg.fifteen,
             };
             
+            // 收集 GPU 信息
+            let gpu_info = get_gpu_info();
+            
             // 创建实时数据
             let realtime_data = RealtimeData {
                 timestamp: Utc::now().timestamp(),
@@ -135,6 +144,7 @@ impl SystemCollector {
                 network: network_info,
                 load_average,
                 uptime_secs: System::uptime(),
+                gpu: gpu_info,
             };
             
             // 发送数据
@@ -155,5 +165,179 @@ pub fn get_static_info() -> SystemStaticInfo {
         cpu_cores: sys.cpus().len(),
         cpu_brand: sys.cpus().first().map(|cpu| cpu.brand().to_string()).unwrap_or_else(|| "Unknown".to_string()),
         total_memory_gb: sys.total_memory() as f64 / 1024.0 / 1024.0 / 1024.0,
+    }
+}
+
+fn get_gpu_info() -> Option<Vec<GpuInfo>> {
+    // 检查 nvidia-smi 是否可用
+    match Command::new("nvidia-smi")
+        .arg("--query-gpu=gpu_name,index,memory.total,memory.used,memory.free,utilization.gpu,temperature.gpu,power.draw,power.limit,fan.speed,clocks.gr,clocks.mem")
+        .arg("--format=csv,noheader,nounits")
+        .output()
+    {
+        Ok(output) => {
+            if output.status.success() {
+                let stdout = String::from_utf8_lossy(&output.stdout);
+                let mut gpus = Vec::new();
+                
+                for line in stdout.lines() {
+                    let parts: Vec<&str> = line.split(", ").collect();
+                    if parts.len() >= 7 {
+                        // 解析基础参数
+                        if let (Ok(index), Ok(memory_total), Ok(memory_used), Ok(memory_free), Ok(utilization), Ok(temperature)) = (
+                            parts[1].parse::<u32>(),
+                            parts[2].parse::<u32>(),
+                            parts[3].parse::<u32>(),
+                            parts[4].parse::<u32>(),
+                            parts[5].parse::<u8>(),
+                            parts[6].parse::<u8>(),
+                        ) {
+                            // 解析可选参数
+                            let power_draw = if parts.len() > 7 && parts[7] != "[N/A]" {
+                                parts[7].parse::<f32>().ok()
+                            } else {
+                                None
+                            };
+                            
+                            let power_limit = if parts.len() > 8 && parts[8] != "[N/A]" {
+                                parts[8].parse::<f32>().ok()
+                            } else {
+                                None
+                            };
+                            
+                            let fan_speed = if parts.len() > 9 && parts[9] != "[N/A]" {
+                                parts[9].parse::<u8>().ok()
+                            } else {
+                                None
+                            };
+                            
+                            let graphics_clock = if parts.len() > 10 && parts[10] != "[N/A]" {
+                                parts[10].parse::<u32>().ok()
+                            } else {
+                                None
+                            };
+                            
+                            let memory_clock = if parts.len() > 11 && parts[11] != "[N/A]" {
+                                parts[11].parse::<u32>().ok()
+                            } else {
+                                None
+                            };
+                            
+                            gpus.push(GpuInfo {
+                                name: parts[0].to_string(),
+                                index,
+                                memory_total_mb: memory_total,
+                                memory_used_mb: memory_used,
+                                memory_free_mb: memory_free,
+                                utilization_percent: utilization,
+                                temperature_celsius: temperature,
+                                power_draw_watts: power_draw,
+                                power_limit_watts: power_limit,
+                                fan_speed_percent: fan_speed,
+                                graphics_clock_mhz: graphics_clock,
+                                memory_clock_mhz: memory_clock,
+                            });
+                        }
+                    }
+                }
+                
+                if !gpus.is_empty() {
+                    Some(gpus)
+                } else {
+                    None
+                }
+            } else {
+                debug!("nvidia-smi command failed: {}", String::from_utf8_lossy(&output.stderr));
+                None
+            }
+        }
+        Err(e) => {
+            debug!("nvidia-smi not found: {}", e);
+            None
+        }
+    }
+}
+
+// 获取 CPU 温度和功耗信息
+fn get_cpu_sensors_info() -> (Option<f32>, Option<f32>) {
+    use std::process::Command;
+    
+    match Command::new("sensors")
+        .arg("-u")  // 机器可读格式
+        .output()
+    {
+        Ok(output) => {
+            if output.status.success() {
+                let output_str = String::from_utf8_lossy(&output.stdout);
+                let mut cpu_temp: Option<f32> = None;
+                let mut cpu_power: Option<f32> = None;
+                
+                // 解析 sensors 输出
+                let lines: Vec<&str> = output_str.lines().collect();
+                let mut current_adapter = "";
+                
+                for i in 0..lines.len() {
+                    let line = lines[i].trim();
+                    
+                    // 检测适配器类型
+                    if line.ends_with("-pci-00c3") || line.contains("k10temp") || 
+                       line.contains("coretemp") || line.contains("zenpower") {
+                        current_adapter = "cpu_temp";
+                    } else if line.contains("Adapter:") {
+                        // 重置适配器类型
+                        if i > 0 && !lines[i-1].contains("k10temp") && !lines[i-1].contains("coretemp") {
+                            current_adapter = "";
+                        }
+                    }
+                    
+                    // 在 CPU 温度适配器中查找温度
+                    if current_adapter == "cpu_temp" {
+                        // 查找 Tctl, Tdie, Package id 等温度标识
+                        if line.starts_with("Tctl:") || line.starts_with("Tdie:") || 
+                           line.starts_with("Package id") || line.starts_with("temp1:") {
+                            // 下一行应该包含实际温度值
+                            if i + 1 < lines.len() {
+                                let value_line = lines[i + 1].trim();
+                                if value_line.contains("_input:") {
+                                    if let Some(value_str) = value_line.split(':').nth(1) {
+                                        if let Ok(temp_value) = value_str.trim().parse::<f32>() {
+                                            cpu_temp = Some(temp_value);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // 查找功耗信息 (在 amdgpu 或其他适配器中)
+                    if line.starts_with("PPT:") || (line.contains("power") && line.contains("_label:")) {
+                        // 检查下一行是否包含功耗值
+                        if i + 1 < lines.len() {
+                            let value_line = lines[i + 1].trim();
+                            if value_line.starts_with("power") && value_line.contains("_input:") {
+                                if let Some(value_str) = value_line.split(':').nth(1) {
+                                    if let Ok(power_value) = value_str.trim().parse::<f32>() {
+                                        // 只记录合理范围内的功耗值 (通常 CPU 功耗在 5-300W)
+                                        if power_value > 5.0 && power_value < 300.0 {
+                                            cpu_power = Some(power_value);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                debug!("CPU temp: {:?}, power: {:?}", cpu_temp, cpu_power);
+                (cpu_temp, cpu_power)
+            } else {
+                debug!("sensors command failed: {}", String::from_utf8_lossy(&output.stderr));
+                (None, None)
+            }
+        }
+        Err(e) => {
+            debug!("sensors not found: {}", e);
+            (None, None)
+        }
     }
 }
