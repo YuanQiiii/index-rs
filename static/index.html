@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index-RS - 服务器监控面板</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-server"></i> 服务器监控面板</h1>
+            <div class="header-info">
+                <span id="hostname">-</span>
+                <span id="uptime">运行时间: -</span>
+                <button id="theme-toggle" class="theme-toggle" title="切换主题">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- 系统信息卡片 -->
+        <section class="system-info">
+            <div class="info-card">
+                <h3><i class="fas fa-microchip"></i> 系统信息</h3>
+                <div class="info-content">
+                    <div class="info-item">
+                        <span class="label">操作系统:</span>
+                        <span id="os-name">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">内核版本:</span>
+                        <span id="kernel-version">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">CPU:</span>
+                        <span id="cpu-info">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">总内存:</span>
+                        <span id="total-memory">-</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 实时监控图表 -->
+        <section class="monitoring">
+            <div class="monitor-grid">
+                <!-- CPU 监控 -->
+                <div class="monitor-card">
+                    <h3><i class="fas fa-microchip"></i> CPU 使用率</h3>
+                    <div class="monitor-value">
+                        <span id="cpu-usage">0</span>%
+                    </div>
+                    <canvas id="cpu-chart"></canvas>
+                </div>
+
+                <!-- 内存监控 -->
+                <div class="monitor-card">
+                    <h3><i class="fas fa-memory"></i> 内存使用</h3>
+                    <div class="monitor-value">
+                        <span id="memory-usage">0</span>%
+                    </div>
+                    <canvas id="memory-chart"></canvas>
+                </div>
+
+                <!-- 网络监控 -->
+                <div class="monitor-card">
+                    <h3><i class="fas fa-network-wired"></i> 网络流量</h3>
+                    <div class="network-info">
+                        <div><i class="fas fa-download"></i> <span id="network-rx">0</span> KB/s</div>
+                        <div><i class="fas fa-upload"></i> <span id="network-tx">0</span> KB/s</div>
+                    </div>
+                    <canvas id="network-chart"></canvas>
+                </div>
+
+                <!-- 系统负载 -->
+                <div class="monitor-card">
+                    <h3><i class="fas fa-tachometer-alt"></i> 系统负载</h3>
+                    <div class="load-info">
+                        <div>1分钟: <span id="load-1">0</span></div>
+                        <div>5分钟: <span id="load-5">0</span></div>
+                        <div>15分钟: <span id="load-15">0</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 磁盘使用情况 -->
+        <section class="disks">
+            <h2><i class="fas fa-hdd"></i> 磁盘使用情况</h2>
+            <div id="disk-list" class="disk-list"></div>
+        </section>
+
+        <!-- 服务导航 -->
+        <section class="services">
+            <h2><i class="fas fa-th"></i> 服务导航</h2>
+            <div id="service-cards" class="service-grid"></div>
+        </section>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html>

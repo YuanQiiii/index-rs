@@ -1,0 +1,91 @@
+# Index-RS 配置文件示例
+# 将此文件复制为 config.toml 并根据需要修改
+
+# 服务器配置
+[server]
+host = "0.0.0.0"  # 监听地址，0.0.0.0 表示监听所有网络接口
+port = 9876       # 监听端口
+
+# 服务配置
+[services]
+ip = "192.168.1.100"  # 所有服务的共享 IP 地址或主机名
+
+# 服务列表
+# 每个服务需要：
+# - name: 显示名称
+# - port: 端口号
+# - icon: Font Awesome 图标类名
+# - description: 简短描述
+# - protocol: http 或 https (默认: http)
+# - health_check_path: 健康检查路径 (可选，默认: /)
+
+[[services.items]]
+name = "Gitea"
+port = 3000
+icon = "fab fa-git-alt"
+description = "Git 仓库管理"
+protocol = "http"
+
+[[services.items]]
+name = "Nextcloud" 
+port = 8080
+icon = "fas fa-cloud"
+description = "私有云存储"
+protocol = "https"
+
+[[services.items]]
+name = "Jellyfin"
+port = 8096
+icon = "fas fa-play-circle"
+description = "媒体服务器"
+protocol = "http"
+
+[[services.items]]
+name = "Home Assistant"
+port = 8123
+icon = "fas fa-home"
+description = "智能家居控制"
+protocol = "http"
+
+[[services.items]]
+name = "Portainer"
+port = 9000
+icon = "fab fa-docker"
+description = "Docker 容器管理"
+protocol = "https"
+
+[[services.items]]
+name = "Pi-hole"
+port = 80
+icon = "fas fa-shield-alt"
+description = "DNS 广告拦截"
+protocol = "http"
+health_check_path = "/admin"
+
+[[services.items]]
+name = "Prometheus"
+port = 9090
+icon = "fas fa-chart-line"
+description = "指标收集系统"
+protocol = "http"
+
+[[services.items]]
+name = "Grafana"
+port = 3000
+icon = "fas fa-chart-area"
+description = "指标可视化"
+protocol = "http"
+
+[[services.items]]
+name = "Bitwarden"
+port = 8082
+icon = "fas fa-key"
+description = "密码管理器"
+protocol = "https"
+
+[[services.items]]
+name = "Uptime Kuma"
+port = 3001
+icon = "fas fa-heartbeat"
+description = "服务监控"
+protocol = "http"
