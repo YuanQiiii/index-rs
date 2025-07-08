@@ -32,6 +32,7 @@ pub async fn load_config() -> Config {
             port: 9876,
         },
         services: get_default_services_config(),
+        monitoring: crate::collector_config::GlobalConfig::default(),
     }
 }
 

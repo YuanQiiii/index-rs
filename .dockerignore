@@ -1,0 +1,43 @@
+# Rust
+target/
+**/*.rs.bk
+Cargo.lock
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Static build output (will be built in Docker)
+static/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Config (use example in Docker)
+config.toml
+
+# Documentation
+*.md
+!README.md
+
+# Temporary files
+*.tmp
+*.temp
+
+# Development files
+todo.md

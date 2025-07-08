@@ -1,6 +1,9 @@
 mod collectors;
+mod collector_utils;
+mod collector_config;
 mod config;
 mod handlers;
+mod health;
 mod models;
 
 use axum::{
@@ -39,7 +42,10 @@ async fn main() {
     let tx = Arc::new(tx);
 
     // 启动系统信息采集器
-    let collector = collectors::SystemCollector::new(tx.as_ref().clone());
+    let collector = collectors::SystemCollector::new(
+        tx.as_ref().clone(),
+        config.monitoring.clone()
+    );
     tokio::spawn(collector.start());
 
     // 创建应用状态

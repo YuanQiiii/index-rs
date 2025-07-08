@@ -1,205 +1,291 @@
-### index-rs
-#### 1\. 项目概述
+# index-rs
 
-`index-rs` 是一个基于 Rust 和 `axum` 框架开发的现代化服务器状态监控与服务导航面板。它通过一个简洁美观的 Web 界面，以卡片和实时图表的形式，集中展示服务器的核心指标、运行状态、网络信息以及已部署服务的快捷入口，旨在为服务器管理员和开发者提供一个轻量、高效、一目了然的监控解决方案。
+一个现代化的服务器监控面板，使用 Rust (Axum) 后端和 React 前端构建，提供实时系统监控和服务导航功能。
 
-#### 2\. 核心功能设计 (扩展与细化)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)
+![React](https://img.shields.io/badge/react-18.2%2B-61dafb.svg)
 
-我们将您已有的功能进行细化，并加入新的功能模块。
+## 功能特性
 
-**2.1 服务导航 (Service Navigation)**
+### 系统监控
+- **实时性能监控**：CPU、内存、网络、磁盘使用情况
+- **CPU 详情**：各核心使用率、温度、功耗监控
+- **GPU 监控**：支持 NVIDIA GPU（温度、使用率、功耗、风扇转速等）
+- **端口占用**：实时显示系统端口占用情况，支持搜索和排序
+- **系统信息**：主机名、操作系统、内核版本、运行时间等
 
-  * **功能描述**: 以卡片形式展示服务器上部署的各个 Web 服务或应用。
-  * **设计细节**:
-      * **静态配置**: 通过服务器上的一个配置文件（例如 `config.toml` 或 `services.json`）来定义卡片信息。每个服务可以配置：
-          * `name`: 服务名称 (e.g., "Gitea")
-          * `url`: 访问地址 (e.g., "[http://192.168.1.10:3000](https://www.google.com/search?q=http://192.168.1.10:3000)")
-          * `icon`: 图标 (可以使用 Font Awesome 图标名或图片的 URL)
-          * `description`: 简短描述。
-      * **状态探测 (新增功能)**: 后端可以定期（例如每分钟）通过简单的 HTTP GET 或 TCP 连接请求来检查服务的健康状态。
-          * **在线 (Online)**: 请求成功 (HTTP 2xx/3xx 或 TCP 连接成功)。卡片上显示一个绿色小圆点。
-          * **离线 (Offline)**: 请求失败或超时。卡片上显示红色小圆点，并可置灰处理。
+### 服务导航
+- 自定义服务卡片配置
+- 服务健康状态检查
+- 一键跳转到配置的服务
 
-**2.2 实时系统状态 (Real-time System Status)**
+### 技术特点
+- **WebSocket 实时推送**：低延迟的实时数据更新
+- **响应式设计**：适配各种屏幕尺寸
+- **深色主题**：护眼的深色界面设计
+- **高性能**：Rust 后端确保低资源占用
 
-  * **功能描述**: 实时展示服务器核心资源的占用情况。数据通过 WebSocket 推送到前端，实现秒级更新。
-  * **设计细节**:
-      * **CPU**:
-          * 总使用率（百分比）。
-          * 每个核心的使用率图表。
-          * CPU 负载 (Load Average) (1分钟, 5分钟, 15分钟)。
-      * **内存 (Memory)**:
-          * 总内存、已用、可用。
-          * 使用率百分比仪表盘。
-          * 交换空间 (Swap) 的使用情况。
-      * **磁盘 (Disk)**:
-          * 以列表或卡片形式展示每个挂载点。
-          * 显示总空间、已用空间、可用空间和使用率。
-      * **网络 (Network)**:
-          * **IP 地址**: 清晰列出所有网络接口的 IPv4 和 IPv6 地址。
-          * **实时速率**: 实时显示上行和下行的网络速度 (KB/s 或 MB/s)。
-          * **数据总量**: 显示自服务启动以来的总上传和下载数据量。
+## 技术栈
 
-**2.3 系统信息 (System Information) (新增功能)**
+### 后端
+- **Rust** - 系统编程语言
+- **Axum** - 现代化的 Web 框架
+- **Tokio** - 异步运行时
+- **Sysinfo** - 系统信息采集
+- **Serde** - 序列化/反序列化
 
-  * **功能描述**: 展示服务器的静态硬件和软件信息，这些信息通常不会改变。
-  * **设计细节**:
-      * **操作系统**: 系统名称、发行版及版本 (e.g., "Ubuntu 22.04.3 LTS")。
-      * **内核版本**: Linux Kernel Version。
-      * **主机名 (Hostname)**。
-      * **系统运行时间 (Uptime)**。
+### 前端
+- **React** - UI 框架
+- **Vite** - 构建工具
+- **Zustand** - 状态管理
+- **ECharts** - 数据可视化
+- **Tailwind CSS** - 样式框架
 
-**2.4 网络与进程监控 (Network & Process Monitoring) (新增功能)**
+## 快速开始
 
-  * **功能描述**: 提供更深度的系统洞察。
-  * **设计细节**:
-      * **端口占用**: 列出当前所有正在监听的 TCP/UDP 端口及其对应的进程名称和 PID。这对于排查端口冲突非常有用。
-      * **进程列表**: 一个简化的 `top` / `htop` 视图。可以按 CPU 或内存使用率排序，显示 PID、用户、CPU占用、内存占用和命令。
+### 环境要求
+- Rust 1.70+
+- Node.js 16+
+- npm 或 yarn
 
-**2.5 历史数据图表 (Historical Data Charts) (新增功能)**
+### 安装步骤
 
-  * **功能描述**: 除了实时图表，还提供历史数据查询与可视化。
-  * **设计细节**:
-      * 后端在内存中（或使用轻量级数据库如 SQLite）缓存最近一段时间（如过去24小时）的 CPU 和内存使用率数据。
-      * 前端提供时间范围选择器（如 "过去1小时", "过去6小时", "过去24小时"），动态加载并展示历史趋势图。
+1. **克隆项目**
+```bash
+git clone https://github.com/yourusername/index-rs.git
+cd index-rs
+```
 
-**2.6 用户界面 (UI/UX)**
+2. **配置服务**
+```bash
+cp config.example.toml config.toml
+# 编辑 config.toml 配置你的服务
+```
 
-  * **主题切换**: 提供明亮 (Light) 和暗黑 (Dark) 两种主题模式。
-  * **响应式设计**: 页面布局能自适应桌面、平板和手机屏幕。
+3. **构建前端**
+```bash
+cd frontend
+npm install
+npm run build
+cd ..
+```
 
------
+4. **运行服务**
+```bash
+cargo run --release
+```
 
-#### 3\. 系统架构设计
+5. **访问面板**
+打开浏览器访问 `http://localhost:9876`
 
-  (这是一个概念图，实际需要您来绘制)
+## 配置说明
 
-  * **后端 (Backend - Rust / `axum`)**:
-    1.  **数据采集器 (Data Collector)**:
-          * 使用 `tokio::spawn` 创建一个后台异步任务。
-          * 此任务每秒钟运行一次，使用 `sysinfo` 这个 crate 来获取所有动态的系统信息 (CPU, Mem, Network, Processes)。
-          * 采集到的数据通过 `tokio` 的广播通道 (broadcast channel) 发送出去。
-    2.  **Web 服务器 (`axum`)**:
-          * **静态文件服务**: 托管编译好的前端 HTML, CSS, JavaScript 文件。
-          * **HTTP API 端点**: 提供一次性的数据接口，如获取静态系统信息 (`/api/static_info`) 和服务卡片配置 (`/api/services`)。
-          * **WebSocket 服务**:
-              * 建立 `/ws/realtime` 端点。
-              * 当有新的客户端连接时，订阅上述的数据广播通道。
-              * 将通道中收到的最新系统数据实时推送给所有连接的前端客户端。
-  * **前端 (Frontend - SPA)**:
-      * 使用现代前端框架（如 Vue, React, Svelte）或原生 JavaScript 构建单页应用。
-      * **初始化**: 页面加载时，通过 HTTP API 获取静态信息和服务列表。
-      * **实时更新**:
-          * 与后端的 `/ws/realtime` 建立 WebSocket 连接。
-          * 监听消息，用收到的新数据来更新 UI 上的图表和数值。
-      * **可视化**: 使用 `Chart.js` 或 `ECharts` 等库来绘制美观的动态图表。
+### 基本配置 (config.toml)
 
------
+```toml
+[server]
+host = "0.0.0.0"
+port = 9876
 
-#### 4\. 技术栈选择
+[services]
+ip = "localhost"  # 所有服务共享的 IP 地址
 
-  * **后端 (Backend)**:
-      * **Web 框架**: `axum` (用户指定)
-      * **异步运行时**: `tokio`
-      * **系统信息库**: `sysinfo` (跨平台，功能强大)
-      * **序列化/反序列化**: `serde` (配合 `serde_json` 处理 JSON)
-      * **配置文件解析**: `toml`
-      * **日志**: `tracing`
-  * **前端 (Frontend)**:
-      * **JavaScript 框架 (可选)**: Vue.js 或 React.js (推荐，便于组件化管理)
-      * **UI 库**: Tailwind CSS (用于快速构建现代化的界面)
-      * **图表库**: `ECharts` (功能强大) 或 `Chart.js` (轻量易用)
-      * **图标**: `Font Awesome` 或 `Lucide Icons`
+[[services.items]]
+name = "Gitea"
+port = 3000
+icon = "fab fa-git-alt"
+description = "Git 仓库管理"
+protocol = "http"
+health_check_path = "/api/v1/version"  # 可选：健康检查路径
+```
 
------
+### 服务配置说明
+- `name`: 服务名称
+- `port`: 服务端口
+- `icon`: Font Awesome 图标类名
+- `description`: 服务描述
+- `protocol`: 协议（http/https）
+- `health_check_path`: 健康检查接口路径（可选）
 
-#### 5\. API 与数据模型设计
+## 开发指南
 
-**5.1 REST API**
+### 后端开发
 
-  * `GET /api/services`: 获取服务卡片列表。
-      * 返回 `Vec<ServiceCard>`
-  * `GET /api/system/static`: 获取一次性的静态系统信息。
-      * 返回 `SystemStaticInfo`
+```bash
+# 开发模式运行
+cargo run
 
-**5.2 WebSocket**
+# 运行测试
+cargo test
 
-  * `WS /ws/realtime`: 用于实时数据推送。
-  * **推送消息格式**: 服务器每秒推送一个 JSON 对象，包含所有动态数据。
+# 代码格式化
+cargo fmt
 
-<!-- end list -->
+# 代码检查
+cargo clippy
+```
 
+### 前端开发
+
+```bash
+cd frontend
+
+# 开发模式（热重载）
+npm run dev
+
+# 构建生产版本
+npm run build
+
+# 代码检查
+npm run lint
+```
+
+## 系统架构
+
+### 数据流
+1. **数据采集**：后端每秒采集一次系统数据
+2. **WebSocket 推送**：通过 WebSocket 实时推送到前端
+3. **状态管理**：前端使用 Zustand 管理全局状态
+4. **UI 更新**：React 组件订阅状态变化自动更新
+
+### 目录结构
+```
+index-rs/
+├── src/                    # Rust 后端源码
+│   ├── main.rs            # 入口文件
+│   ├── models.rs          # 数据模型
+│   ├── collectors.rs      # 数据采集器
+│   ├── handlers.rs        # HTTP/WebSocket 处理器
+│   └── config.rs          # 配置管理
+├── frontend/              # React 前端源码
+│   ├── src/
+│   │   ├── api/          # API 和 WebSocket 管理
+│   │   ├── components/   # React 组件
+│   │   ├── store/        # Zustand 状态管理
+│   │   └── utils/        # 工具函数
+│   └── ...
+├── static/               # 前端构建输出目录
+└── config.toml          # 配置文件
+```
+
+## API 文档
+
+### REST API
+
+- `GET /api/system/static` - 获取系统静态信息
+- `GET /api/services` - 获取服务列表
+
+### WebSocket
+
+- `/ws/realtime` - 实时数据推送端点
+
+数据格式示例：
 ```json
 {
-  "cpu_total_usage": 15.5,
-  "memory_usage": {
-    "total_kb": 8192000,
-    "used_kb": 3276800,
-    "free_kb": 4915200,
-    "used_percent": 40.0
+  "timestamp": 1234567890,
+  "cpu": {
+    "total_usage": 15.2,
+    "core_usage": [10.1, 20.3, ...],
+    "temperature_celsius": 65.0,
+    "power_watts": 45.5
   },
-  "network_io": {
-    "rx_speed_kbps": 1024.5,
-    "tx_speed_kbps": 128.2
+  "memory": {
+    "total_kb": 16777216,
+    "used_kb": 8388608,
+    "used_percent": 50.0
   },
-  "disks": [
-    { "name": "/dev/sda1", "mount_point": "/", "total_gb": 100, "used_gb": 45 }
-  ],
-  "uptime_secs": 864000
+  // ... 更多数据
 }
 ```
 
-**5.3 Rust 数据结构 (示例)**
+## 部署建议
 
-```rust
-use serde::Serialize;
+### systemd 服务
 
-#[derive(Serialize)]
-pub struct ServiceCard {
-    name: String,
-    url: String,
-    icon: String,
-    description: String,
-    status: String, // "Online" or "Offline"
-}
+创建 `/etc/systemd/system/index-rs.service`：
 
-#[derive(Serialize)]
-pub struct SystemStaticInfo {
-    os_name: String,
-    kernel_version: String,
-    hostname: String,
-    cpu_cores: usize,
-}
+```ini
+[Unit]
+Description=index-rs server monitoring
+After=network.target
 
-#[derive(Serialize)]
-pub struct RealtimeData {
-    // ... 对应上面 JSON 格式的字段
-}
+[Service]
+Type=simple
+User=your-user
+WorkingDirectory=/path/to/index-rs
+ExecStart=/path/to/index-rs/target/release/index-rs
+Restart=always
+Environment="RUST_LOG=info"
+
+[Install]
+WantedBy=multi-user.target
 ```
 
------
+### Docker 部署
 
-#### 6\. 开发实施步骤 (Roadmap)
+```dockerfile
+# Dockerfile 示例
+FROM rust:latest as builder
+WORKDIR /app
+COPY . .
+RUN cargo build --release
 
-1.  **环境搭建**: `cargo new index-rs`，并添加 `axum`, `tokio`, `sysinfo`, `serde` 等基础依赖。
-2.  **后端核心**:
-      * 实现数据采集器，能够稳定地从 `sysinfo` 获取数据。
-      * 搭建基础的 `axum` Web 服务器。
-3.  **API 开发**:
-      * 实现 `/api/services`，能够读取 `config.toml` 并返回数据。
-      * 实现 WebSocket 端点 (`/ws/realtime`)，并将采集器的数据广播出去。
-4.  **前端开发**:
-      * 构建基础 HTML 布局和 CSS 样式。
-      * 编写 JavaScript，连接 WebSocket，并在控制台打印接收到的数据。
-      * 将数据渲染到页面上，先实现数值展示。
-      * 集成图表库，将实时数据可视化。
-5.  **功能完善**:
-      * 实现服务卡片的状态探测功能。
-      * 添加磁盘、进程、网络端口等高级监控模块的 API 和前端展示。
-      * 实现历史数据图表。
-6.  **优化与部署**:
-      * 优化代码，处理错误和异常情况。
-      * 编写 Dockerfile，方便容器化部署。
-      * 编写 `systemd` 服务文件，实现开机自启和进程守护。
-      * 撰写 README 文档，说明如何配置和部署。
+FROM node:18 as frontend-builder
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm install
+COPY frontend/ .
+RUN npm run build
 
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y ca-certificates
+WORKDIR /app
+COPY --from=builder /app/target/release/index-rs .
+COPY --from=frontend-builder /app/static ./static
+COPY config.example.toml ./config.toml
+EXPOSE 9876
+CMD ["./index-rs"]
+```
+
+## 故障排除
+
+### CPU 温度无法读取
+- 确保安装了 `lm-sensors` 包：`sudo apt install lm-sensors`
+- 运行 `sudo sensors-detect` 并按提示操作
+- 某些虚拟机或容器环境可能无法读取温度
+
+### 端口占用信息不完整
+- 需要 root 权限才能看到所有进程信息
+- 运行：`sudo ./target/release/index-rs`
+
+### GPU 信息不显示
+- 仅支持 NVIDIA GPU
+- 确保安装了 NVIDIA 驱动和 nvidia-smi 工具
+
+## 贡献指南
+
+欢迎提交 Issue 和 Pull Request！
+
+### 开发流程
+1. Fork 项目
+2. 创建功能分支 (`git checkout -b feature/amazing-feature`)
+3. 提交更改 (`git commit -m 'Add some amazing feature'`)
+4. 推送到分支 (`git push origin feature/amazing-feature`)
+5. 创建 Pull Request
+
+### 代码规范
+- Rust 代码使用 `cargo fmt` 格式化
+- React 代码遵循项目 ESLint 配置
+- 提交信息使用语义化格式
+
+## 许可证
+
+MIT License - 详见 [LICENSE](LICENSE) 文件
+
+## 致谢
+
+- [Axum](https://github.com/tokio-rs/axum) - 优秀的 Rust Web 框架
+- [React](https://react.dev) - 构建用户界面
+- [ECharts](https://echarts.apache.org) - 强大的图表库
+- [Tailwind CSS](https://tailwindcss.com) - 实用的 CSS 框架

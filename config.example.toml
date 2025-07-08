@@ -89,3 +89,23 @@ port = 3001
 icon = "fas fa-heartbeat"
 description = "服务监控"
 protocol = "http"
+
+# 监控配置
+[monitoring]
+
+# 采集器配置
+[monitoring.collectors]
+collect_interval_secs = 1        # 数据采集间隔（秒）
+enable_gpu = true               # 是否启用 GPU 监控
+enable_ports = true             # 是否启用端口扫描
+enable_processes = true         # 是否启用进程监控
+enable_sensors = true           # 是否启用 CPU 传感器
+command_timeout_secs = 5        # 命令执行超时时间（秒）
+max_processes = 20              # 最大进程数
+
+# 性能配置
+[monitoring.performance]
+gpu_cache_ttl_secs = 5          # GPU 数据缓存时间（秒）
+sensors_cache_ttl_secs = 10     # 传感器数据缓存时间（秒）
+port_scan_timeout_secs = 3      # 端口扫描超时时间（秒）
+history_size = 60               # 历史数据保留数量

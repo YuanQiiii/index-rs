@@ -36,6 +36,8 @@ pub struct RealtimeData {
     pub load_average: LoadAverage,
     pub uptime_secs: u64,
     pub gpu: Option<Vec<GpuInfo>>,
+    pub ports: Vec<PortInfo>,
+    pub processes: Vec<ProcessInfo>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -112,6 +114,8 @@ pub struct GpuInfo {
 pub struct Config {
     pub server: ServerConfig,
     pub services: ServicesConfig,
+    #[serde(default)]
+    pub monitoring: crate::collector_config::GlobalConfig,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -136,6 +140,29 @@ pub struct ServiceCardConfig {
     pub protocol: String,
     #[serde(default)]
     pub health_check_path: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PortInfo {
+    pub port: u16,
+    pub protocol: String,  // tcp 或 udp
+    pub state: String,     // LISTEN, ESTABLISHED 等
+    pub program: String,   // 程序名称
+    pub pid: Option<u32>,  // 进程ID
+    pub address: String,   // 监听地址
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProcessInfo {
+    pub pid: u32,
+    pub name: String,
+    pub cpu_percent: f32,
+    pub memory_percent: f32,
+    pub memory_mb: f64,
+    pub status: String,
+    pub user: Option<String>,
+    pub command: String,
+    pub start_time: Option<i64>,
 }
 
 fn default_protocol() -> String {
