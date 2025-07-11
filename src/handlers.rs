@@ -12,7 +12,7 @@ use axum::{
 use futures::{sink::SinkExt, stream::StreamExt};
 use std::sync::Arc;
 use tokio::sync::{broadcast, RwLock};
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -129,6 +129,7 @@ pub async fn docker_action_handler(
     Json(req): Json<ContainerActionRequest>,
 ) -> Result<Json<ActionResponse>, StatusCode> {
     use tokio::process::Command;
+    use tokio::time::{timeout, Duration};
     
     let command = match req.action {
         ContainerAction::Start => "start",
@@ -138,31 +139,49 @@ pub async fn docker_action_handler(
         ContainerAction::Unpause => "unpause",
     };
     
-    match Command::new("docker")
+    // 设置操作超时时间
+    let timeout_duration = match command {
+        "stop" => Duration::from_secs(30), // 停止操作可能需要更长时间
+        "restart" => Duration::from_secs(45), // 重启需要停止+启动
+        _ => Duration::from_secs(10),
+    };
+    
+    info!("Executing docker {} on container {}", command, req.container_id);
+    
+    let docker_command = Command::new("docker")
         .arg(command)
         .arg(&req.container_id)
-        .output()
-        .await
-    {
-        Ok(output) => {
+        .output();
+    
+    match timeout(timeout_duration, docker_command).await {
+        Ok(Ok(output)) => {
             if output.status.success() {
+                info!("Docker {} action on container {} succeeded", command, req.container_id);
                 Ok(Json(ActionResponse {
                     success: true,
                     message: format!("Container {} action '{}' completed successfully", req.container_id, command),
                 }))
             } else {
                 let error_msg = String::from_utf8_lossy(&output.stderr);
+                warn!("Docker {} action on container {} failed: {}", command, req.container_id, error_msg);
                 Ok(Json(ActionResponse {
                     success: false,
-                    message: format!("Failed to {} container: {}", command, error_msg),
+                    message: format!("Failed to {} container: {}", command, error_msg.trim()),
                 }))
             }
         }
-        Err(e) => {
+        Ok(Err(e)) => {
             error!("Failed to execute docker command: {}", e);
             Ok(Json(ActionResponse {
                 success: false,
                 message: format!("Failed to execute docker command: {}", e),
+            }))
+        }
+        Err(_) => {
+            error!("Docker {} action on container {} timed out after {} seconds", command, req.container_id, timeout_duration.as_secs());
+            Ok(Json(ActionResponse {
+                success: false,
+                message: format!("Operation timed out after {} seconds. The container may still be processing the command.", timeout_duration.as_secs()),
             }))
         }
     }
