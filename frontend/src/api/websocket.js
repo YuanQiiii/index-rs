@@ -1,120 +1,125 @@
-// WebSocket 连接管理
+import logger from '../utils/logger';
+
 class WebSocketManager {
-  constructor(url) {
-    this.url = url;
+  constructor() {
     this.ws = null;
-    this.reconnectTimer = null;
-    this.reconnectInterval = 5000;
-    this.messageHandlers = new Set();
-    this.connectionHandlers = new Set();
+    this.url = `ws://${window.location.host}/ws/realtime`;
+    this.reconnectAttempts = 0;
+    this.maxReconnectAttempts = 10;
+    this.baseReconnectDelay = 1000; // 1秒基础延迟
+    this.maxReconnectDelay = 30000; // 最大30秒延迟
+    this.listeners = {
+      message: [],
+      connection: [],
+    };
+    this.isIntentionallyClosed = false;
+  }
+
+  // 计算重连延迟（指数退避）
+  getReconnectDelay() {
+    const delay = Math.min(
+      this.baseReconnectDelay * Math.pow(2, this.reconnectAttempts),
+      this.maxReconnectDelay
+    );
+    // 添加随机抖动，避免同时重连
+    const jitter = delay * 0.1 * Math.random();
+    return delay + jitter;
   }
 
   connect() {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      logger.debug('WebSocket already connected');
       return;
     }
 
-    try {
-      this.ws = new WebSocket(this.url);
+    this.isIntentionallyClosed = false;
+    logger.info('Connecting to WebSocket...');
+
+    this.ws = new WebSocket(this.url);
+
+    this.ws.onopen = () => {
+      logger.info('WebSocket connected');
+      this.reconnectAttempts = 0;
+      this.notifyConnectionListeners(true);
+    };
+
+    this.ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        this.notifyMessageListeners(data);
+      } catch (error) {
+        logger.error('Failed to parse WebSocket message:', error);
+      }
+    };
+
+    this.ws.onerror = (error) => {
+      logger.error('WebSocket error:', error);
+    };
+
+    this.ws.onclose = () => {
+      logger.info('WebSocket disconnected');
+      this.notifyConnectionListeners(false);
       
-      this.ws.onopen = () => {
-        console.log('WebSocket 连接成功');
-        if (this.reconnectTimer) {
-          clearInterval(this.reconnectTimer);
-          this.reconnectTimer = null;
-        }
-        this.notifyConnectionHandlers(true);
-      };
-
-      this.ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          this.notifyMessageHandlers(data);
-        } catch (error) {
-          console.error('解析消息失败:', error);
-        }
-      };
-
-      this.ws.onclose = () => {
-        console.log('WebSocket 连接断开');
-        this.notifyConnectionHandlers(false);
-        this.startReconnect();
-      };
-
-      this.ws.onerror = (error) => {
-        console.error('WebSocket 错误:', error);
-      };
-    } catch (error) {
-      console.error('创建 WebSocket 连接失败:', error);
-      this.startReconnect();
-    }
+      if (!this.isIntentionallyClosed && this.reconnectAttempts < this.maxReconnectAttempts) {
+        const delay = this.getReconnectDelay();
+        logger.info(`Reconnecting in ${delay}ms... (attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`);
+        this.reconnectAttempts++;
+        setTimeout(() => this.connect(), delay);
+      } else if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+        logger.error('Max reconnection attempts reached');
+      }
+    };
   }
 
   disconnect() {
-    if (this.reconnectTimer) {
-      clearInterval(this.reconnectTimer);
-      this.reconnectTimer = null;
-    }
-    
+    this.isIntentionallyClosed = true;
     if (this.ws) {
       this.ws.close();
       this.ws = null;
     }
   }
 
-  startReconnect() {
-    if (!this.reconnectTimer) {
-      this.reconnectTimer = setInterval(() => {
-        console.log('尝试重新连接...');
-        this.connect();
-      }, this.reconnectInterval);
-    }
-  }
-
-  onMessage(handler) {
-    this.messageHandlers.add(handler);
-    return () => {
-      this.messageHandlers.delete(handler);
-    };
-  }
-
-  onConnectionChange(handler) {
-    this.connectionHandlers.add(handler);
-    return () => {
-      this.connectionHandlers.delete(handler);
-    };
-  }
-
-  notifyMessageHandlers(data) {
-    this.messageHandlers.forEach(handler => {
-      try {
-        handler(data);
-      } catch (error) {
-        console.error('消息处理器错误:', error);
-      }
-    });
-  }
-
-  notifyConnectionHandlers(isConnected) {
-    this.connectionHandlers.forEach(handler => {
-      try {
-        handler(isConnected);
-      } catch (error) {
-        console.error('连接处理器错误:', error);
-      }
-    });
-  }
-
   send(data) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(data));
     } else {
-      console.warn('WebSocket 未连接');
+      logger.warn('WebSocket is not connected');
     }
+  }
+
+  onMessage(callback) {
+    this.listeners.message.push(callback);
+    return () => {
+      this.listeners.message = this.listeners.message.filter(cb => cb !== callback);
+    };
+  }
+
+  onConnectionChange(callback) {
+    this.listeners.connection.push(callback);
+    return () => {
+      this.listeners.connection = this.listeners.connection.filter(cb => cb !== callback);
+    };
+  }
+
+  notifyMessageListeners(data) {
+    this.listeners.message.forEach(callback => {
+      try {
+        callback(data);
+      } catch (error) {
+        logger.error('Error in message listener:', error);
+      }
+    });
+  }
+
+  notifyConnectionListeners(isConnected) {
+    this.listeners.connection.forEach(callback => {
+      try {
+        callback(isConnected);
+      } catch (error) {
+        logger.error('Error in connection listener:', error);
+      }
+    });
   }
 }
 
-// 创建单例实例
-const wsManager = new WebSocketManager(`ws://${window.location.host}/ws/realtime`);
-
-export default wsManager;
+export default new WebSocketManager();

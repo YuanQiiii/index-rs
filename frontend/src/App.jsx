@@ -1,17 +1,19 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import useServerStore from './store/serverStore';
 import wsManager from './api/websocket';
 import { serverApi } from './api';
 import MainLayout from './components/layout/MainLayout';
-import Dashboard from './pages/Dashboard';
-import PortsPage from './pages/PortsPage';
-import ProcessesPage from './pages/ProcessesPage';
-import DockerPage from './pages/DockerPage';
-import FilesPage from './pages/FilesPage';
-import ServicesPage from './pages/ServicesPage';
-import NotFound from './pages/NotFound';
 import Loading from './components/common/Loading';
+
+// 路由懒加载
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const PortsPage = lazy(() => import('./pages/PortsPage'));
+const ProcessesPage = lazy(() => import('./pages/ProcessesPage'));
+const DockerPage = lazy(() => import('./pages/DockerPage'));
+const FilesPage = lazy(() => import('./pages/FilesPage'));
+const ServicesPage = lazy(() => import('./pages/ServicesPage'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 
 function App() {
   const setConnectionStatus = useServerStore((state) => state.setConnectionStatus);
@@ -71,13 +73,41 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<MainLayout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="ports" element={<PortsPage />} />
-          <Route path="processes" element={<ProcessesPage />} />
-          <Route path="docker" element={<DockerPage />} />
-          <Route path="files" element={<FilesPage />} />
-          <Route path="services" element={<ServicesPage />} />
-          <Route path="*" element={<NotFound />} />
+          <Route index element={
+            <Suspense fallback={<Loading size="lg" text="加载中..." />}>
+              <Dashboard />
+            </Suspense>
+          } />
+          <Route path="ports" element={
+            <Suspense fallback={<Loading size="lg" text="加载中..." />}>
+              <PortsPage />
+            </Suspense>
+          } />
+          <Route path="processes" element={
+            <Suspense fallback={<Loading size="lg" text="加载中..." />}>
+              <ProcessesPage />
+            </Suspense>
+          } />
+          <Route path="docker" element={
+            <Suspense fallback={<Loading size="lg" text="加载中..." />}>
+              <DockerPage />
+            </Suspense>
+          } />
+          <Route path="files" element={
+            <Suspense fallback={<Loading size="lg" text="加载中..." />}>
+              <FilesPage />
+            </Suspense>
+          } />
+          <Route path="services" element={
+            <Suspense fallback={<Loading size="lg" text="加载中..." />}>
+              <ServicesPage />
+            </Suspense>
+          } />
+          <Route path="*" element={
+            <Suspense fallback={<Loading size="lg" text="加载中..." />}>
+              <NotFound />
+            </Suspense>
+          } />
         </Route>
       </Routes>
     </Router>

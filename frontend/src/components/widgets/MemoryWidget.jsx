@@ -3,6 +3,7 @@ import ReactECharts from 'echarts-for-react';
 import useServerStore from '../../store/serverStore';
 import Card, { CardHeader, CardBody } from '../common/Card';
 import { formatBytes, getStatusColor } from '../../utils/helpers';
+import echarts, { createResponsiveOption } from '../../utils/echarts';
 
 const MemoryWidget = () => {
   const memoryData = useServerStore((state) => state.realtimeData.memory);
