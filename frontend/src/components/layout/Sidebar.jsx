@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { NavLink } from 'react-router-dom';
 
 const Sidebar = () => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const menuItems = [
     {
@@ -62,25 +61,17 @@ const Sidebar = () => {
   ];
 
   return (
-    <div className={`bg-dark-secondary h-full transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
+    <div className="bg-dark-secondary h-full transition-all duration-300 border-r border-gray-700 w-64">
       <div className="flex flex-col h-full">
         {/* Logo/Header */}
         <div className="p-4 border-b border-gray-700">
           <div className="flex items-center justify-between">
-            <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center' : ''}`}>
+            <div className="flex items-center gap-3">
               <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
-              {!isCollapsed && <span className="text-xl font-bold text-white">Index-RS</span>}
+              <span className="text-xl font-bold text-white">Index-RS</span>
             </div>
-            <button
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className="p-1 rounded hover:bg-dark-tertiary transition-colors lg:block hidden"
-            >
-              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isCollapsed ? "M13 5l7 7-7 7M5 5l7 7-7 7" : "M11 19l-7-7 7-7m8 14l-7-7 7-7"} />
-              </svg>
-            </button>
           </div>
         </div>
 
@@ -94,20 +85,13 @@ const Sidebar = () => {
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
                       isActive
-                        ? 'bg-primary text-white'
+                        ? 'bg-primary text-white shadow-md'
                         : 'text-gray-400 hover:text-white hover:bg-dark-tertiary'
                     }`
                   }
                 >
                   <span className="flex-shrink-0">{item.icon}</span>
-                  {!isCollapsed && (
-                    <span className="text-sm font-medium">{item.name}</span>
-                  )}
-                  {isCollapsed && (
-                    <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
-                      {item.name}
-                    </div>
-                  )}
+                  <span className="text-sm font-medium">{item.name}</span>
                 </NavLink>
               </li>
             ))}
@@ -116,8 +100,8 @@ const Sidebar = () => {
 
         {/* Footer */}
         <div className="p-4 border-t border-gray-700">
-          <div className={`text-xs text-gray-500 ${isCollapsed ? 'text-center' : ''}`}>
-            {isCollapsed ? '© 2024' : '© 2024 Index-RS'}
+          <div className="text-xs text-gray-500">
+            © 2024 Index-RS
           </div>
         </div>
       </div>

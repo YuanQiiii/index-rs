@@ -95,6 +95,7 @@ export const darkThemeConfig = {
 export const createResponsiveOption = (baseOption) => {
   return {
     ...commonChartConfig,
+    ...darkThemeConfig,
     ...baseOption,
     grid: {
       left: '3%',
@@ -102,11 +103,21 @@ export const createResponsiveOption = (baseOption) => {
       bottom: '3%',
       top: '10%',
       containLabel: true,
+      ...darkThemeConfig.grid,
       ...baseOption.grid
+    },
+    xAxis: {
+      ...darkThemeConfig.xAxis,
+      ...baseOption.xAxis
+    },
+    yAxis: {
+      ...darkThemeConfig.yAxis,
+      ...baseOption.yAxis
     },
     tooltip: {
       trigger: 'axis',
       confine: true,
+      ...darkThemeConfig.tooltip,
       ...baseOption.tooltip
     }
   };

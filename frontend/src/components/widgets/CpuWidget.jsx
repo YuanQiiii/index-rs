@@ -12,7 +12,7 @@ const CpuWidget = () => {
   const chartOption = useMemo(() => {
     const baseOptions = getChartBaseOptions();
     
-    return {
+    return createResponsiveOption({
       ...baseOptions,
       series: [
         {
@@ -45,7 +45,7 @@ const CpuWidget = () => {
         ...baseOptions.xAxis,
         data: cpuHistory.map((_, index) => index === cpuHistory.length - 1 ? '现在' : ''),
       }
-    };
+    });
   }, [cpuHistory]);
 
   return (
