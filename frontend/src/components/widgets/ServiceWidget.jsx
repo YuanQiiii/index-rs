@@ -22,7 +22,7 @@ const ServiceWidget = () => {
         {services.map((service, index) => (
           <Card 
             key={index}
-            className={`cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-xl ${
+            className={`cursor-pointer transition-all duration-200 hover:shadow-xl hover:-translate-y-1 ${
               service.status === 'offline' ? 'opacity-70' : ''
             }`}
             onClick={() => handleServiceClick(service.url)}

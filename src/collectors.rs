@@ -1,6 +1,7 @@
 use crate::models::*;
 use crate::collector_utils::*;
 use crate::collector_config::GlobalConfig;
+use crate::docker_parser::parse_docker_containers;
 use chrono::Utc;
 use sysinfo::{System, Networks, Disks, ProcessStatus};
 use tokio::sync::broadcast;
@@ -76,9 +77,9 @@ impl SystemCollector {
             
             // 获取系统负载
             let load_average = LoadAverage {
-                one: System::load_average().one,
-                five: System::load_average().five,
-                fifteen: System::load_average().fifteen,
+                one: sysinfo::System::load_average().one,
+                five: sysinfo::System::load_average().five,
+                fifteen: sysinfo::System::load_average().fifteen,
             };
             
             // 并行收集外部命令数据（根据配置启用）
@@ -106,6 +107,13 @@ impl SystemCollector {
                 }
             );
             
+            // 收集Docker容器信息
+            let docker_containers = if self.global_config.collectors.enable_docker {
+                self.collect_docker_containers().await
+            } else {
+                Vec::new()
+            };
+            
             // 创建实时数据
             let realtime_data = RealtimeData {
                 timestamp: Utc::now().timestamp(),
@@ -118,6 +126,7 @@ impl SystemCollector {
                 gpu: gpu_info,
                 ports: port_info,
                 processes: process_info,
+                docker_containers,
             };
             
             // 发送数据
@@ -230,6 +239,40 @@ impl SystemCollector {
         
         Ok(parse_netstat_output(&output))
     }
+    
+    async fn collect_docker_containers(&self) -> Vec<DockerContainer> {
+        match self.collect_docker_containers_internal().await {
+            Ok(containers) => containers,
+            Err(e) => {
+                debug!("Failed to collect Docker containers: {}", e);
+                Vec::new()
+            }
+        }
+    }
+    
+    async fn collect_docker_containers_internal(&self) -> Result<Vec<DockerContainer>, String> {
+        // 首先检查Docker是否可用
+        if let Err(_) = execute_command_with_timeout("docker", &["version"], Duration::from_secs(2)).await {
+            return Err("Docker is not available".to_string());
+        }
+        
+        // 获取容器列表
+        let containers_json = execute_command_with_timeout(
+            "docker",
+            &["ps", "-a", "--format", "{{json .}}"],
+            self.config.command_timeout
+        ).await?;
+        
+        // 获取容器统计信息
+        let stats_output = execute_command_with_timeout(
+            "docker",
+            &["stats", "--no-stream", "--format", "{{json .}}"],
+            self.config.command_timeout
+        ).await?;
+        
+        // 解析容器信息
+        parse_docker_containers(&containers_json, &stats_output)
+    }
 }
 
 pub fn get_static_info() -> SystemStaticInfo {
@@ -260,13 +303,13 @@ fn collect_memory_info(sys: &System) -> MemoryInfo {
     let swap_free = sys.free_swap();
     
     MemoryInfo {
-        total_kb: total_memory,
-        used_kb: used_memory,
-        free_kb: free_memory,
+        total_kb: total_memory / 1024,
+        used_kb: used_memory / 1024,
+        free_kb: free_memory / 1024,
         used_percent: (used_memory as f32 / total_memory as f32) * 100.0,
-        swap_total_kb: swap_total,
-        swap_used_kb: swap_used,
-        swap_free_kb: swap_free,
+        swap_total_kb: swap_total / 1024,
+        swap_used_kb: swap_used / 1024,
+        swap_free_kb: swap_free / 1024,
         swap_used_percent: if swap_total > 0 {
             (swap_used as f32 / swap_total as f32) * 100.0
         } else {
@@ -347,9 +390,9 @@ fn collect_process_info(sys: &System, max_processes: usize) -> Vec<ProcessInfo> 
     
     for (pid, process) in sys.processes() {
         let cpu_percent = process.cpu_usage();
-        let memory_kb = process.memory();
-        let memory_mb = memory_kb as f64 / 1024.0;
-        let memory_percent = (memory_kb as f64 / total_memory as f64) * 100.0;
+        let memory_bytes = process.memory();
+        let memory_mb = memory_bytes as f64 / 1024.0 / 1024.0;
+        let memory_percent = (memory_bytes as f64 / total_memory as f64) * 100.0;
         
         let status = match process.status() {
             ProcessStatus::Run => "Running",
@@ -390,8 +433,9 @@ fn parse_sensors_output(output: &str) -> (Option<f32>, Option<f32>) {
     for line in output.lines() {
         let line = line.trim();
         
-        // 查找 CPU 温度
-        if line.contains("Core") && line.contains("°C") {
+        // 查找 CPU 温度 - 支持 Intel (Core) 和 AMD (Tctl/Tdie) 格式
+        if (line.contains("Core") || line.contains("Tctl") || line.contains("Tdie") || line.contains("Package")) 
+            && line.contains("°C") {
             if let Some(temp_str) = line.split('+').nth(1) {
                 if let Some(temp_str) = temp_str.split('°').next() {
                     if let Ok(temp) = temp_str.trim().parse::<f32>() {
@@ -401,10 +445,13 @@ fn parse_sensors_output(output: &str) -> (Option<f32>, Option<f32>) {
             }
         }
         
-        // 查找功耗信息
-        if line.contains("power") && line.contains("W") && !line.contains("ALARM") {
-            if let Some(power_str) = line.split(':').nth(1) {
-                if let Some(power_str) = power_str.trim().split(' ').next() {
+        // 查找功耗信息 - 支持多种格式
+        if (line.contains("power") || line.contains("Power") || line.contains("PPT") || line.contains("Package power")) 
+            && line.contains("W") && !line.contains("ALARM") {
+            // 处理不同的格式，如 "PPT: 13.00 W" 或 "power1: 10.50 W"
+            if let Some(idx) = line.find(':') {
+                let power_part = &line[idx + 1..];
+                if let Some(power_str) = power_part.trim().split(' ').next() {
                     if let Ok(p) = power_str.parse::<f32>() {
                         power = Some(p);
                     }

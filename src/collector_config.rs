@@ -32,6 +32,10 @@ pub struct CollectorsConfig {
     #[serde(default = "default_true")]
     pub enable_sensors: bool,
     
+    /// 是否启用 Docker 监控
+    #[serde(default = "default_true")]
+    pub enable_docker: bool,
+    
     /// 命令超时时间（秒）
     #[serde(default = "default_command_timeout")]
     pub command_timeout_secs: u64,
@@ -88,6 +92,7 @@ impl Default for CollectorsConfig {
             enable_ports: default_true(),
             enable_processes: default_true(),
             enable_sensors: default_true(),
+            enable_docker: default_true(),
             command_timeout_secs: default_command_timeout(),
             max_processes: default_max_processes(),
         }

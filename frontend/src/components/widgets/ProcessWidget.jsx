@@ -3,7 +3,7 @@ import useServerStore from '../../store/serverStore';
 import Card, { CardBody } from '../common/Card';
 import { formatBytes } from '../../utils/helpers';
 
-const ITEMS_PER_PAGE = 20;
+const ITEMS_PER_PAGE = 10;
 
 const ProcessWidget = () => {
   const processes = useServerStore((state) => state.realtimeData.processes);
@@ -120,16 +120,16 @@ const ProcessWidget = () => {
         </div>
 
         {/* 进程表格 */}
-        <div className="overflow-x-auto" style={{ minHeight: '800px' }}>
-          <table className="min-w-full">
+        <div className="overflow-x-auto" style={{ height: '400px', overflowY: 'auto' }}>
+          <table className="w-full table-fixed">
             <thead className="sticky top-0 bg-white dark:bg-dark-secondary z-10">
               <tr className="text-left text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                <th className="pb-2 bg-white dark:bg-dark-secondary">PID</th>
-                <th className="pb-2 bg-white dark:bg-dark-secondary">进程名</th>
-                <th className="pb-2 bg-white dark:bg-dark-secondary">状态</th>
-                <th className="pb-2 text-right bg-white dark:bg-dark-secondary">CPU %</th>
-                <th className="pb-2 text-right bg-white dark:bg-dark-secondary">内存 %</th>
-                <th className="pb-2 text-right bg-white dark:bg-dark-secondary">内存</th>
+                <th className="pb-2 bg-white dark:bg-dark-secondary w-20">PID</th>
+                <th className="pb-2 bg-white dark:bg-dark-secondary w-40">进程名</th>
+                <th className="pb-2 bg-white dark:bg-dark-secondary w-24">状态</th>
+                <th className="pb-2 text-right bg-white dark:bg-dark-secondary w-36">CPU %</th>
+                <th className="pb-2 text-right bg-white dark:bg-dark-secondary w-36">内存 %</th>
+                <th className="pb-2 text-right bg-white dark:bg-dark-secondary w-28">内存</th>
                 <th className="pb-2 hidden lg:table-cell bg-white dark:bg-dark-secondary">命令</th>
               </tr>
             </thead>
@@ -146,21 +146,21 @@ const ProcessWidget = () => {
                     key={process.pid} 
                     className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                   >
-                    <td className="py-2 text-gray-700 dark:text-gray-300">{process.pid}</td>
-                    <td className="py-2">
-                      <div className="font-medium">{process.name}</div>
+                    <td className="py-2 text-gray-700 dark:text-gray-300 w-20">{process.pid}</td>
+                    <td className="py-2 w-40">
+                      <div className="font-medium truncate">{process.name}</div>
                       {process.user && (
-                        <div className="text-xs text-gray-500 dark:text-gray-400">{process.user}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{process.user}</div>
                       )}
                     </td>
-                    <td className="py-2">
+                    <td className="py-2 w-24">
                       <span className={`text-sm ${getStatusColor(process.status)}`}>
                         {process.status}
                       </span>
                     </td>
-                    <td className="py-2 text-right">
+                    <td className="py-2 text-right w-36">
                       <div className="flex items-center justify-end gap-2">
-                        <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                        <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden flex-shrink-0">
                           <div 
                             className={`h-full transition-all ${
                               process.cpu_percent > 80 ? 'bg-red-500' :
@@ -170,14 +170,14 @@ const ProcessWidget = () => {
                             style={{ width: `${Math.min(process.cpu_percent, 100)}%` }}
                           />
                         </div>
-                        <span className="text-sm min-w-[3rem] text-right">
+                        <span className="text-sm w-12 text-right inline-block">
                           {process.cpu_percent.toFixed(1)}%
                         </span>
                       </div>
                     </td>
-                    <td className="py-2 text-right">
+                    <td className="py-2 text-right w-36">
                       <div className="flex items-center justify-end gap-2">
-                        <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                        <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden flex-shrink-0">
                           <div 
                             className={`h-full transition-all ${
                               process.memory_percent > 80 ? 'bg-red-500' :
@@ -187,30 +187,21 @@ const ProcessWidget = () => {
                             style={{ width: `${Math.min(process.memory_percent, 100)}%` }}
                           />
                         </div>
-                        <span className="text-sm min-w-[3rem] text-right">
+                        <span className="text-sm w-12 text-right inline-block">
                           {process.memory_percent.toFixed(1)}%
                         </span>
                       </div>
                     </td>
-                    <td className="py-2 text-right text-sm text-gray-700 dark:text-gray-300">
-                      {formatBytes(process.memory_mb * 1024 * 1024)}
+                    <td className="py-2 text-right text-sm text-gray-700 dark:text-gray-300 w-28">
+                      <span className="inline-block w-full">
+                        {formatBytes(process.memory_mb * 1024 * 1024)}
+                      </span>
                     </td>
                     <td className="py-2 hidden lg:table-cell">
                       <div className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-xs" 
                            title={process.command}>
                         {process.command || '-'}
                       </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-              
-              {/* 填充空行以保持表格高度固定 */}
-              {currentProcesses.length > 0 && currentProcesses.length < ITEMS_PER_PAGE && (
-                [...Array(ITEMS_PER_PAGE - currentProcesses.length)].map((_, index) => (
-                  <tr key={`empty-${index}`} className="border-b border-gray-100 dark:border-gray-800">
-                    <td className="py-2" colSpan="7">
-                      <div style={{ height: '40px' }}></div>
                     </td>
                   </tr>
                 ))
@@ -287,7 +278,7 @@ const ProcessWidget = () => {
         <div className="mt-4 text-xs text-gray-600 dark:text-gray-500 space-y-1">
           <p>• 显示 CPU 或内存使用率最高的进程</p>
           <p>• 进程信息每秒更新一次</p>
-          <p>• 每页固定显示 20 个进程</p>
+          <p>• 每页显示 10 个进程</p>
         </div>
       </CardBody>
     </Card>

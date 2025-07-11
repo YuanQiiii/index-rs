@@ -101,3 +101,102 @@ pub async fn check_service_health(url: &str) -> ServiceStatus {
         Err(_) => ServiceStatus::Offline,
     }
 }
+
+// Docker 管理接口
+#[derive(serde::Deserialize)]
+pub struct ContainerActionRequest {
+    pub container_id: String,
+    pub action: ContainerAction,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ContainerAction {
+    Start,
+    Stop,
+    Restart,
+    Pause,
+    Unpause,
+}
+
+#[derive(serde::Serialize)]
+pub struct ActionResponse {
+    pub success: bool,
+    pub message: String,
+}
+
+pub async fn docker_action_handler(
+    Json(req): Json<ContainerActionRequest>,
+) -> Result<Json<ActionResponse>, StatusCode> {
+    use tokio::process::Command;
+    
+    let command = match req.action {
+        ContainerAction::Start => "start",
+        ContainerAction::Stop => "stop",
+        ContainerAction::Restart => "restart",
+        ContainerAction::Pause => "pause",
+        ContainerAction::Unpause => "unpause",
+    };
+    
+    match Command::new("docker")
+        .arg(command)
+        .arg(&req.container_id)
+        .output()
+        .await
+    {
+        Ok(output) => {
+            if output.status.success() {
+                Ok(Json(ActionResponse {
+                    success: true,
+                    message: format!("Container {} action '{}' completed successfully", req.container_id, command),
+                }))
+            } else {
+                let error_msg = String::from_utf8_lossy(&output.stderr);
+                Ok(Json(ActionResponse {
+                    success: false,
+                    message: format!("Failed to {} container: {}", command, error_msg),
+                }))
+            }
+        }
+        Err(e) => {
+            error!("Failed to execute docker command: {}", e);
+            Ok(Json(ActionResponse {
+                success: false,
+                message: format!("Failed to execute docker command: {}", e),
+            }))
+        }
+    }
+}
+
+pub async fn docker_logs_handler(
+    axum::extract::Path(container_id): axum::extract::Path<String>,
+    axum::extract::Query(params): axum::extract::Query<LogsParams>,
+) -> Result<String, StatusCode> {
+    use tokio::process::Command;
+    
+    let tail_lines = params.tail.unwrap_or(100).to_string();
+    
+    match Command::new("docker")
+        .arg("logs")
+        .arg("--tail")
+        .arg(&tail_lines)
+        .arg(&container_id)
+        .output()
+        .await
+    {
+        Ok(output) => {
+            let logs = String::from_utf8_lossy(&output.stdout);
+            let errors = String::from_utf8_lossy(&output.stderr);
+            Ok(format!("{}\n{}", logs, errors))
+        }
+        Err(e) => {
+            error!("Failed to get container logs: {}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+#[derive(serde::Deserialize)]
+pub struct LogsParams {
+    pub tail: Option<usize>,
+}

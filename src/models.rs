@@ -38,6 +38,7 @@ pub struct RealtimeData {
     pub gpu: Option<Vec<GpuInfo>>,
     pub ports: Vec<PortInfo>,
     pub processes: Vec<ProcessInfo>,
+    pub docker_containers: Vec<DockerContainer>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -163,6 +164,99 @@ pub struct ProcessInfo {
     pub user: Option<String>,
     pub command: String,
     pub start_time: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DockerContainer {
+    pub id: String,
+    pub name: String,
+    pub image: String,
+    pub status: String,
+    pub state: ContainerState,
+    pub created: i64,
+    pub ports: Vec<PortMapping>,
+    pub cpu_percent: f32,
+    pub memory_usage_mb: f64,
+    pub memory_limit_mb: f64,
+    pub memory_percent: f32,
+    pub network_rx_mb: f64,
+    pub network_tx_mb: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ContainerState {
+    pub running: bool,
+    pub paused: bool,
+    pub restarting: bool,
+    pub dead: bool,
+    pub pid: Option<i32>,
+    pub exit_code: Option<i32>,
+    pub started_at: Option<String>,
+    pub finished_at: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PortMapping {
+    pub container_port: u16,
+    pub host_port: Option<u16>,
+    pub protocol: String,
+    pub host_ip: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DockerImage {
+    pub id: String,
+    pub repo_tags: Vec<String>,
+    pub created: i64,
+    pub size_mb: f64,
+    pub virtual_size_mb: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DockerVolume {
+    pub name: String,
+    pub driver: String,
+    pub mount_point: String,
+    pub created: String,
+    pub size: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DockerNetwork {
+    pub id: String,
+    pub name: String,
+    pub driver: String,
+    pub scope: String,
+    pub internal: bool,
+    pub containers: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FileInfo {
+    pub name: String,
+    pub path: String,
+    pub size: u64,
+    pub is_dir: bool,
+    pub is_file: bool,
+    pub is_symlink: bool,
+    pub modified: i64,
+    pub permissions: String,
+    pub owner: Option<String>,
+    pub group: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DirectoryListing {
+    pub path: String,
+    pub parent: Option<String>,
+    pub files: Vec<FileInfo>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UploadResponse {
+    pub success: bool,
+    pub message: String,
+    pub file_path: Option<String>,
 }
 
 fn default_protocol() -> String {

@@ -6,11 +6,29 @@
   body {
     @apply bg-gray-50 dark:bg-dark text-gray-900 dark:text-gray-100 transition-colors;
   }
+  
+  /* 防止布局偏移的全局样式 */
+  * {
+    box-sizing: border-box;
+  }
+  
+  /* 确保滚动条始终显示，防止内容变化导致页面宽度跳动 */
+  html {
+    overflow-y: scroll;
+  }
+  
+  /* 为动态内容设置最小高度，防止加载时的布局跳动 */
+  .dynamic-content {
+    min-height: 100px;
+    contain: layout;
+  }
 }
 
 @layer components {
   .card {
     @apply bg-white dark:bg-dark-secondary rounded-lg shadow-lg p-6 border border-gray-200 dark:border-dark-tertiary transition-colors;
+    /* 防止卡片内容变化导致布局偏移 */
+    contain: layout style;
   }
   
   .card-header {
@@ -31,5 +49,24 @@
   
   .status-offline {
     @apply w-3 h-3 bg-red-500 rounded-full;
+  }
+  
+  /* 表格固定布局 */
+  .fixed-table {
+    table-layout: fixed;
+  }
+  
+  /* 图表容器固定高度 */
+  .chart-container {
+    @apply h-40;
+    contain: strict;
+  }
+  
+  /* 滚动容器 */
+  .scroll-container {
+    @apply overflow-auto;
+    -webkit-overflow-scrolling: touch;
+    /* 防止滚动时的重绘 */
+    will-change: scroll-position;
   }
 }

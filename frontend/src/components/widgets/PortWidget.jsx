@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import useServerStore from '../../store/serverStore';
 import Card, { CardHeader, CardBody } from '../common/Card';
+
+const ITEMS_PER_PAGE = 10;
 
 const PortWidget = () => {
   const ports = useServerStore((state) => state.realtimeData.ports);
   const [filter, setFilter] = useState('');
   const [sortBy, setSortBy] = useState('port');
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const filteredAndSortedPorts = React.useMemo(() => {
+  const filteredAndSortedPorts = useMemo(() => {
     let filtered = ports;
     
     if (filter) {
@@ -32,6 +35,17 @@ const PortWidget = () => {
       }
     });
   }, [ports, filter, sortBy]);
+
+  // 计算分页
+  const totalPages = Math.ceil(filteredAndSortedPorts.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentPorts = filteredAndSortedPorts.slice(startIndex, endIndex);
+
+  // 当搜索或排序变化时，重置到第一页
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [filter, sortBy]);
 
   return (
     <Card className="lg:col-span-3">
@@ -65,20 +79,21 @@ const PortWidget = () => {
         </div>
         
         {filteredAndSortedPorts.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-700">
-                  <th className="text-left py-2 px-3 font-medium text-gray-400">端口</th>
-                  <th className="text-left py-2 px-3 font-medium text-gray-400">协议</th>
-                  <th className="text-left py-2 px-3 font-medium text-gray-400">状态</th>
-                  <th className="text-left py-2 px-3 font-medium text-gray-400">地址</th>
-                  <th className="text-left py-2 px-3 font-medium text-gray-400">程序</th>
-                  <th className="text-left py-2 px-3 font-medium text-gray-400">PID</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredAndSortedPorts.map((port, index) => (
+          <div className="overflow-hidden">
+            <div className="overflow-x-auto" style={{ height: '400px', overflowY: 'auto' }}>
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-dark-secondary z-10">
+                  <tr className="border-b border-gray-700">
+                    <th className="text-left py-2 px-3 font-medium text-gray-400 bg-dark-secondary">端口</th>
+                    <th className="text-left py-2 px-3 font-medium text-gray-400 bg-dark-secondary">协议</th>
+                    <th className="text-left py-2 px-3 font-medium text-gray-400 bg-dark-secondary">状态</th>
+                    <th className="text-left py-2 px-3 font-medium text-gray-400 bg-dark-secondary">地址</th>
+                    <th className="text-left py-2 px-3 font-medium text-gray-400 bg-dark-secondary">程序</th>
+                    <th className="text-left py-2 px-3 font-medium text-gray-400 bg-dark-secondary">PID</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentPorts.map((port, index) => (
                   <tr key={index} className="border-b border-gray-800 hover:bg-dark-tertiary transition-colors">
                     <td className="py-2 px-3 font-mono">{port.port}</td>
                     <td className="py-2 px-3">
@@ -101,11 +116,76 @@ const PortWidget = () => {
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
           </div>
         ) : (
           <div className="text-center py-8 text-gray-400">
             {filter ? '没有匹配的端口' : '暂无端口占用信息'}
+          </div>
+        )}
+
+        {/* 分页控制 */}
+        {totalPages > 1 && (
+          <div className="mt-4 flex items-center justify-between">
+            <div className="text-sm text-gray-400">
+              显示 {startIndex + 1} - {Math.min(endIndex, filteredAndSortedPorts.length)} / 共 {filteredAndSortedPorts.length} 个端口
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                className={`px-3 py-1 rounded transition-colors ${
+                  currentPage === 1
+                    ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                上一页
+              </button>
+              
+              {/* 页码 */}
+              <div className="flex gap-1">
+                {[...Array(Math.min(5, totalPages))].map((_, index) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = index + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = index + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + index;
+                  } else {
+                    pageNum = currentPage - 2 + index;
+                  }
+                  
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`px-3 py-1 rounded transition-colors ${
+                        currentPage === pageNum
+                          ? 'bg-primary text-white'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              <button
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className={`px-3 py-1 rounded transition-colors ${
+                  currentPage === totalPages
+                    ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                下一页
+              </button>
+            </div>
           </div>
         )}
       </CardBody>

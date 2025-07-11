@@ -5,9 +5,11 @@ mod config;
 mod handlers;
 mod health;
 mod models;
+mod docker_parser;
+mod file_handlers;
 
 use axum::{
-    routing::get,
+    routing::{get, post},
     Router,
 };
 use handlers::AppState;
@@ -67,6 +69,15 @@ async fn main() {
         .route("/api/services", get(handlers::get_services_handler))
         .route("/api/system/static", get(handlers::get_static_info_handler))
         .route("/ws/realtime", get(handlers::websocket_handler))
+        // Docker API
+        .route("/api/docker/action", post(handlers::docker_action_handler))
+        .route("/api/docker/logs/:container_id", get(handlers::docker_logs_handler))
+        // 文件管理 API
+        .route("/api/files/list", get(file_handlers::list_files_handler))
+        .route("/api/files/upload", post(file_handlers::upload_file_handler))
+        .route("/api/files/download/*file_path", get(file_handlers::download_file_handler))
+        .route("/api/files/mkdir", post(file_handlers::create_directory_handler))
+        .route("/api/files/delete", post(file_handlers::delete_file_handler))
         .with_state(app_state)
         // 静态文件服务
         .fallback_service(ServeDir::new("static"))

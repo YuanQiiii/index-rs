@@ -41,6 +41,7 @@ const useServerStore = create(
       gpu: null,
       ports: [],
       processes: [],
+      docker_containers: [],
       load_average: {
         one: 0,
         five: 0,
